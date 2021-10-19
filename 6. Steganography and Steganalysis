@@ -1,0 +1,144 @@
+#!pip install Stegano
+import stegano
+from PIL import Image, ImageChops
+from stegano import lsb, lsbset
+from stegano.steganalysis import statistics, parity
+import matplotlib.pylab as plt
+
+cover = Image.open('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\lena.png').convert('RGB')
+stego = lsb.hide("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\lena.png", 10*"Python Image Processing Cookbook - LSB data hiding with Stegano").convert('RGB')
+stego.save("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\lena-secret.png")
+print(lsb.reveal("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\lena-secret.png"))
+parity_encoded_cover = parity.steganalyse(cover)
+parity_encoded_stego = parity.steganalyse(stego)
+_, cover_common = statistics.steganalyse(cover)
+_, stego_common = statistics.steganalyse(stego)
+
+plt.figure(figsize=(30,20))
+plt.subplot(231), plt.imshow(cover), plt.axis('off'), plt.title('Cover Image', size=20)
+plt.subplot(232), plt.imshow(stego), plt.axis('off'), plt.title('Stego Image', size=20)
+plt.subplot(233), plt.imshow(ImageChops.difference(stego, cover)), plt.axis('off'), plt.title('Diff Image', size=20)
+plt.subplot(234), plt.imshow(parity_encoded_cover), plt.axis('off'), plt.title('Parity Encoded Cover Image', size=20)
+plt.subplot(235), plt.imshow(parity_encoded_stego), plt.axis('off'), plt.title('Parity Encoded Stego Image', size=20)
+plt.subplot(236), plt.imshow(ImageChops.difference(parity_encoded_stego, parity_encoded_cover)), plt.axis('off'), plt.title('Diff in Parity Encoded Images', size=20)
+plt.show()
+
+def plot_freq(cover_common, stego_common):
+    pixel_freq = list(zip(*cover_common))
+    pixel = pixel_freq[0]
+    freq = pixel_freq[1]
+    df1 = pd.DataFrame({'Pixel':pixel, 'Freq':freq, 'Group':'Cover'})
+    pixel_freq = list(zip(*stego_common))
+    pixel = pixel_freq[0]
+    freq = pixel_freq[1]
+    df2 = pd.DataFrame({'Pixel':pixel, 'Freq':freq, 'Group':'Stego'})
+    df = pd.concat([df1, df2])
+    df.pivot("Pixel", "Group", "Freq").plot(kind='bar').legend(bbox_to_anchor=(1.2, 0.5))
+    plt.xlabel('Pixel value')
+    plt.ylabel('Frequency')
+    plt.ylim((525, 735))
+    plt.grid()
+    plt.show()
+
+plot_freq(cover_common, stego_common)
+cover_common
+stego_common
+
+cover = Image.open("images/lena.png").convert('RGB')
+# Hide a secret with the Sieve of Eratosthenes
+secret_message = "Python Image Processing Cookbook - LSB data hiding with Stegano lsbset!"
+n = 1000
+stego = lsbset.hide("images/lena.png",
+                                secret_message,
+                                generators.eratosthenes(),
+                                shift = n).convert('RGB')
+stego.save("images/stego.png")
+print(stego.size, cover.size)
+
+plt.figure(figsize=(20,10))
+plt.subplot(121)
+plt.imshow(ImageChops.difference(stego, cover), cmap='hot')
+plt.title('Difference of Stego and Cover Image', size=20)
+plt.subplot(122)
+plt.imshow(ImageChops.difference(parity.steganalyse(stego), parity.steganalyse(cover)), cmap='hot')
+plt.title('Steganalysis with Parity\n(Locations of hidden message)', size=20)
+plt.show()
+
+try:
+    # Try to decode with another generator
+    message = lsbset.reveal("images/stego.png", generators.fibonacci(), shift = n)
+except:
+    print('Could not decode with the generator provided!')
+    
+message = lsbset.reveal("images/stego.png", generators.eratosthenes(), shift = n)
+message
+
+secret = exifHeader.hide("images/butterfly.jpg", "images/stego.png", secret_message=5*"Python Image Processing Cookbook - LSB data hiding with Stegano")
+print(exifHeader.reveal("images/stego.png"))
+
+#GUI
+root = Tk()
+root.title("Image Viewer")
+
+image_no_1 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\lena.png"))
+image_no_2 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\stego_out1.png"))
+image_no_3 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\stego_out2.png"))
+
+List_images = [image_no_1, image_no_2, image_no_3]
+label = Label(image=image_no_1)
+label.grid(row=0, column=0, columnspan=3)
+
+def forward(img_no):
+    global label
+    global button_forward
+    global button_back
+    global button_exit
+    label.grid_forget()
+    label = Label(image=List_images[img_no-1])
+    label.grid(row=0, column=0, columnspan=3)
+    button_for = Button(root, text="forward",
+                        command=lambda: forward(img_no+1))
+ 
+    if img_no == 3:
+        button_forward = Button(root, text="Forward",
+                                state=DISABLED)
+    button_back = Button(root, text="Back",
+                         command=lambda: back(img_no-1))
+    button_back.grid(row=1, column=0)
+    button_exit.grid(row=1, column=1)
+    button_for.grid(row=1, column=2)
+
+def back(img_no):
+    global label
+    global button_forward
+    global button_back
+    global button_exit
+    label.grid_forget()
+    label = Label(image=List_images[img_no - 1])
+    label.grid(row=0, column=0, columnspan=3)
+    button_forward = Button(root, text="forward",
+                            command=lambda: forward(img_no + 1))
+    button_back = Button(root, text="Back",
+                         command=lambda: back(img_no - 1))
+    print(img_no)
+ 
+    if img_no == 1:
+      button_back = Button(root, Text="Back", state=DISABLED)
+ 
+    label.grid(row=0, column=0, columnspan=3)
+    button_back.grid(row=1, column=0)
+    button_exit.grid(row=1, column=1)
+    button_for.grid(row=1, column=2)
+ 
+button_back = Button(root, text="Back", command=back,
+                     state=DISABLED)
+button_exit = Button(root, text="Exit",
+                     command=root.destroy)
+button_forward = Button(root, text="Forward",
+                        command=lambda: forward(2))
+
+button_back.grid(row=1, column=0)
+button_exit.grid(row=1, column=1)
+button_forward.grid(row=1, column=2) 
+ 
+root.mainloop()

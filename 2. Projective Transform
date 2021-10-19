@@ -1,0 +1,106 @@
+from skimage.transform import ProjectiveTransform
+from skimage.io import imread
+import numpy as np
+import matplotlib.pylab as plt
+import cv2
+from tkinter import *
+from PIL import ImageTk, Image
+
+im_src = imread('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\painting.png')
+im_dst = imread('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\graffiti.png')
+im_mask = imread('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\graffiti_mask.png')
+im_dst1 = np.copy(im_dst)
+height, width, dim = im_src.shape
+print(height, width, im_src.shape, im_dst.shape)
+
+pt = ProjectiveTransform()
+src = np.array([[   0.,    0.],
+       [height-1,    0.],
+       [height-1,  width-1],
+       [   0.,  width-1]])
+dst = np.array([[ 0., 0.],
+       [im_dst.shape[0]-1, 0],
+       [im_dst.shape[0]-1,  687],
+       [ 0., 659]])
+print(pt.estimate(src, dst))
+
+im_dst_masked = im_dst & im_mask
+
+x, y = np.mgrid[:im_dst.shape[0], :im_dst.shape[1]]
+dst_indices = np.hstack((x.reshape(-1, 1), y.reshape(-1,1))) 
+src_indices = np.round(pt.inverse(dst_indices), 0).astype(int)
+valid_idx = np.where((src_indices[:,0] < height) & (src_indices[:,1] < width) & (src_indices[:,0] >= 0) & (src_indices[:,1] >= 0))
+dst_indicies_valid = dst_indices[valid_idx]
+src_indicies_valid = src_indices[valid_idx]
+im_dst[dst_indicies_valid[:,0],dst_indicies_valid[:,1]] = im_src[src_indicies_valid[:,0],src_indicies_valid[:,1]]
+im_dst &= (~im_mask) 
+im_dst += im_dst_masked
+image_rgb = cv2.cvtColor(im_dst, cv2.COLOR_BGR2RGB)
+cv2.imwrite('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\masked.png',image_rgb)
+
+#GUI
+root = Tk()
+root.title("Image Viewer")
+
+image_no_1 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\painting.png"))
+image_no_2 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\graffiti.png"))
+image_no_3 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\masked.png")) 
+
+List_images = [image_no_1, image_no_2, image_no_3]
+label = Label(image=image_no_1)
+label.grid(row=0, column=0, columnspan=3)
+
+def forward(img_no):
+    global label
+    global button_forward
+    global button_back
+    global button_exit
+    label.grid_forget()
+    label = Label(image=List_images[img_no-1])
+    label.grid(row=0, column=0, columnspan=3)
+    button_for = Button(root, text="forward",
+                        command=lambda: forward(img_no+1))
+ 
+    if img_no == 3:
+        button_forward = Button(root, text="Forward",
+                                state=DISABLED)
+    button_back = Button(root, text="Back",
+                         command=lambda: back(img_no-1))
+    button_back.grid(row=1, column=0)
+    button_exit.grid(row=1, column=1)
+    button_for.grid(row=1, column=2)
+
+def back(img_no):
+    global label
+    global button_forward
+    global button_back
+    global button_exit
+    label.grid_forget()
+    label = Label(image=List_images[img_no - 1])
+    label.grid(row=0, column=0, columnspan=3)
+    button_forward = Button(root, text="forward",
+                            command=lambda: forward(img_no + 1))
+    button_back = Button(root, text="Back",
+                         command=lambda: back(img_no - 1))
+    print(img_no)
+ 
+    if img_no == 1:
+      button_back = Button(root, Text="Back", state=DISABLED)
+ 
+    label.grid(row=0, column=0, columnspan=3)
+    button_back.grid(row=1, column=0)
+    button_exit.grid(row=1, column=1)
+    button_for.grid(row=1, column=2)
+ 
+button_back = Button(root, text="Back", command=back,
+                     state=DISABLED)
+button_exit = Button(root, text="Exit",
+                     command=root.destroy)
+button_forward = Button(root, text="Forward",
+                        command=lambda: forward(2))
+
+button_back.grid(row=1, column=0)
+button_exit.grid(row=1, column=1)
+button_forward.grid(row=1, column=2)
+ 
+root.mainloop()

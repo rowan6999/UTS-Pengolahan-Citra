@@ -1,0 +1,123 @@
+#matplotlib inline
+from skimage import color, data, restoration
+import scipy.fftpack as fp
+from skimage.metrics import peak_signal_noise_ratio
+from skimage.io import imread
+import numpy as np
+import matplotlib.pylab as plt
+from matplotlib.ticker import LinearLocator, FormatStrFormatter
+import cv2
+from tkinter import *
+from PIL import ImageTk, Image
+
+def convolve2d(im, psf, k):
+    M, N = im.shape
+    freq = fp.fft2(im)
+    psf = np.pad(psf, (((M-k)//2,(M-k)//2+1), ((N-k)//2,(N-k)//2+1)), mode='constant') # assumption: min(M,N) > k > 0, k odd
+    freq_kernel = fp.fft2(fp.ifftshift(psf))
+    return np.abs(fp.ifft2(freq*freq_kernel))
+
+def plot_freq_filter(F, title, size=20):
+    plt.imshow(20*np.log10( 0.01 + np.abs(fp.fftshift(F))), cmap='coolwarm'), plt.title(title, size=size), plt.colorbar()
+
+def plot_freq_spec_3d(freq):
+    fig = plt.figure(figsize=(10,10))
+    ax = fig.gca(projection='3d')
+    Y = np.arange(-freq.shape[0]//2,freq.shape[0]-freq.shape[0]//2)
+    X = np.arange(-freq.shape[1]//2,freq.shape[1]-freq.shape[1]//2)
+    X, Y = np.meshgrid(X, Y)
+    Z = (20*np.log10( 0.01 + fp.fftshift(freq))).real
+    surf = ax.plot_surface(X, Y, Z, cmap=plt.cm.coolwarm,
+                           linewidth=0, antialiased=True)
+    ax.zaxis.set_major_locator(LinearLocator(10))
+    ax.zaxis.set_major_formatter(FormatStrFormatter('%.02f'))
+    plt.show()
+    
+im = color.rgb2gray(imread('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\cactus.png'))
+k = 5
+psf = np.ones((k, k)) / k**2
+im1 = convolve2d(im, psf, k)
+im1 += 0.3 * im.std() * np.random.standard_normal(im.shape)
+im2, _ = restoration.unsupervised_wiener(im1, psf)
+im3 = restoration.wiener(im1, psf, balance=0.25)
+cv2.imwrite('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\im.png',255*im)
+cv2.imwrite('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\im1.png',255*im1)
+cv2.imwrite('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\im2.png',255*im2)
+cv2.imwrite('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\im3.png',255*im3)
+
+#GUI
+root = Tk()
+root.title("Image Viewer")
+
+img = Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\im.png") 
+img1 = Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\im1.png") 
+img2 = Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\im2.png") 
+img3 = Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 03\images\im3.png") 
+newsize = (802, 535)
+resize_image1 = img.resize(newsize)
+resize_image2 = img1.resize(newsize)
+resize_image3 = img2.resize(newsize)
+resize_image4 = img3.resize(newsize)
+
+image_no_1 = ImageTk.PhotoImage(resize_image1)
+image_no_2 = ImageTk.PhotoImage(resize_image2)
+image_no_3 = ImageTk.PhotoImage(resize_image3)
+image_no_4 = ImageTk.PhotoImage(resize_image4)
+List_images = [image_no_1, image_no_2, image_no_3, image_no_4]
+label = Label(image=image_no_1)
+label.grid(row=0, column=0, columnspan=3)
+
+def forward(img_no):
+    global label
+    global button_forward
+    global button_back
+    global button_exit
+    label.grid_forget()
+    label = Label(image=List_images[img_no-1])
+    label.grid(row=0, column=0, columnspan=3)
+    button_for = Button(root, text="forward",
+                        command=lambda: forward(img_no+1))
+ 
+    if img_no == 4:
+        button_forward = Button(root, text="Forward",
+                                state=DISABLED)
+    button_back = Button(root, text="Back",
+                         command=lambda: back(img_no-1))
+    button_back.grid(row=1, column=0)
+    button_exit.grid(row=1, column=1)
+    button_for.grid(row=1, column=2)
+
+def back(img_no):
+    global label
+    global button_forward
+    global button_back
+    global button_exit
+    label.grid_forget()
+    label = Label(image=List_images[img_no - 1])
+    label.grid(row=0, column=0, columnspan=3)
+    button_forward = Button(root, text="forward",
+                            command=lambda: forward(img_no + 1))
+    button_back = Button(root, text="Back",
+                         command=lambda: back(img_no - 1))
+    print(img_no)
+ 
+    if img_no == 1:
+      button_back = Button(root, Text="Back", state=DISABLED)
+ 
+    label.grid(row=0, column=0, columnspan=3)
+    button_back.grid(row=1, column=0)
+    button_exit.grid(row=1, column=1)
+    button_for.grid(row=1, column=2)
+ 
+button_back = Button(root, text="Back", command=back,
+                     state=DISABLED)
+button_exit = Button(root, text="Exit",
+                     command=root.destroy)
+button_forward = Button(root, text="Forward",
+                        command=lambda: forward(2))
+
+button_back.grid(row=1, column=0)
+button_exit.grid(row=1, column=1)
+button_forward.grid(row=1, column=2)
+ 
+root.mainloop()

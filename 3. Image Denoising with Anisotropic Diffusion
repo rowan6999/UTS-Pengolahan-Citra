@@ -1,0 +1,97 @@
+from medpy.filter.smoothing import anisotropic_diffusion
+from skimage.util import random_noise
+import matplotlib.pylab as plt
+from skimage.color import rgb2gray
+from skimage.io import imread
+import numpy as np
+from tkinter import *
+from PIL import ImageTk, Image
+from tkinter import *
+from PIL import ImageTk, Image
+import cv2
+
+img = rgb2gray(imread('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 02\images\cameraman.png'))
+noisy = random_noise(img, var=0.01)
+noisy = np.clip(noisy, 0, 1)
+plt.figure(figsize=(15,15))
+plt.gray()
+plt.subplots_adjust(0,0,1,1,0.05,0.05)
+plt.subplot(221), plt.imshow(img), plt.axis('off'), plt.title('Original', size=20)
+plt.subplot(222), plt.imshow(noisy), plt.axis('off'), plt.title('Noisy', size=20)
+diff_out = anisotropic_diffusion(noisy, niter=20, kappa=20, option=1)
+plt.subplot(223), plt.imshow(diff_out), plt.axis('off'), plt.title(r'Anisotropic Diffusion (Perona Malik eq 1, iter=20, $\kappa=20$)', size=18)
+diff_out = anisotropic_diffusion(noisy, niter=50, kappa=100, option=2)
+plt.subplot(224), plt.imshow(diff_out), plt.axis('off'), plt.title(r'Anisotropic Diffusion (Perona Malik eq 2, iter=50, $\kappa=50$)', size=18)
+plt.show()
+
+cv2.imwrite('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\noisy.png',255*noisy)
+cv2.imwrite('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\diff_out1.png',255*diff_out1)
+cv2.imwrite('D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\diff_out2.png',255*diff_out2)
+
+#GUI
+root = Tk()
+root.title("Image Viewer")
+
+image_no_1 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\cameraman.png"))
+image_no_2 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\noisy.png"))
+image_no_3 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\diff_out1.png")) 
+image_no_4 = ImageTk.PhotoImage(Image.open("D:\python pengcit\Python-Image-Processing-Cookbook-master\Chapter 01\images\diff_out2.png"))
+List_images = [image_no_1, image_no_2, image_no_3, image_no_4]
+label = Label(image=image_no_1)
+label.grid(row=0, column=0, columnspan=3)
+
+def forward(img_no):
+    global label
+    global button_forward
+    global button_back
+    global button_exit
+    label.grid_forget()
+    label = Label(image=List_images[img_no-1])
+    label.grid(row=0, column=0, columnspan=3)
+    button_for = Button(root, text="forward",
+                        command=lambda: forward(img_no+1))
+ 
+    if img_no == 4:
+        button_forward = Button(root, text="Forward",
+                                state=DISABLED)
+    button_back = Button(root, text="Back",
+                         command=lambda: back(img_no-1))
+    button_back.grid(row=1, column=0)
+    button_exit.grid(row=1, column=1)
+    button_for.grid(row=1, column=2)
+
+def back(img_no):
+    global label
+    global button_forward
+    global button_back
+    global button_exit
+    label.grid_forget()
+    label = Label(image=List_images[img_no - 1])
+    label.grid(row=0, column=0, columnspan=3)
+    button_forward = Button(root, text="forward",
+                            command=lambda: forward(img_no + 1))
+    button_back = Button(root, text="Back",
+                         command=lambda: back(img_no - 1))
+    print(img_no)
+ 
+    if img_no == 1:
+      button_back = Button(root, Text="Back", state=DISABLED)
+ 
+    label.grid(row=0, column=0, columnspan=3)
+    button_back.grid(row=1, column=0)
+    button_exit.grid(row=1, column=1)
+    button_for.grid(row=1, column=2)
+ 
+button_back = Button(root, text="Back", command=back,
+                     state=DISABLED)
+button_exit = Button(root, text="Exit",
+                     command=root.destroy)
+button_forward = Button(root, text="Forward",
+                        command=lambda: forward(2))
+
+button_back.grid(row=1, column=0)
+button_exit.grid(row=1, column=1)
+button_forward.grid(row=1, column=2)
+ 
+root.mainloop()
+
